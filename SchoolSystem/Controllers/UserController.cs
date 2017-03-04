@@ -199,19 +199,13 @@ namespace SchoolSystem.Controllers
                 return Json(new { success = false, reason = "用户名或密码不正确!" }, JsonRequestBehavior.AllowGet);
             else
             {
-                //Session["UserID"] = userInfo.UserID.ToString();
-                //Session["UserName"] = userInfo.UserName.ToString();
-                //Session["Pemission"] = userInfo.Pemission.ToString();
-
-                //HttpCookie cookie = new HttpCookie("userInfo");
-                //cookie.Expires = DateTime.MaxValue;
-                //cookie.Values.Add("userId", userInfo.UserID.ToString());
-                //Response.Cookies.Add(cookie);
 
                 return Json(new
                 {
                     success = true,
-                    userId = userInfo.UserID.ToString()
+                    userName = userInfo.UserName,
+                    userId = userInfo.UserID,
+                    pemission = userInfo.Pemission
                 }, JsonRequestBehavior.AllowGet);
             }
 
