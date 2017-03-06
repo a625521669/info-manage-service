@@ -7,6 +7,7 @@ namespace SchoolSystem.Models
 {
     public class UserProfile
     {
+        public string UserID { set; get; }
         public string UserName { set; get; }
         public string Pemission { set; get; }
         public string NO { set; get; }

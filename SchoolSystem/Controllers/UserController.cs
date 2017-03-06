@@ -14,20 +14,29 @@ namespace SchoolSystem.Controllers
         [HttpPost]
         public JsonResult AddUser(UserProfile profile)
         {
-            profile.UserName = profile.NO;
+            var maxID = db.T("select top 1(ID) from Users order by ID desc").ExecuteScalar();
 
-            if (string.IsNullOrEmpty(profile.UserName) || IsUserExist(profile.UserName))
-                return Json(new { success = false, reason = "党员编号为空或已经存在!" }, JsonRequestBehavior.AllowGet);
+            var prefix = "";
 
+            if (profile.Pemission == "1")
+                prefix = "S";
+
+            if (profile.Pemission == "2")
+                prefix = "T";
+
+            if (profile.Pemission == "3")
+                prefix = "A";
+
+            profile.UserName = prefix + "2017" + maxID.ToString();
 
             var userId = Guid.NewGuid().ToString();
 
             if (profile.CreateOn == null)
                 profile.CreateOn = DateTime.Now.ToString();
 
-            db.T("insert into UserProfile(UserID, NO, Name, Sex, Nation, BorthDate, Display, Origin, Education, Marry, OwnPart, OwnGroup, Job, PoliceNO, SoldierNO, StudentNo, CreateOn, JoinGroupDate, ApplyDate, JoinPartDate, BeRegularDate, Address, Phone, Type) values({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23})", userId, profile.NO, profile.Name, profile.Sex, profile.Nation, profile.BorthDate, profile.Display, profile.Origin, profile.Education, profile.Marry, profile.OwnPart, profile.OwnGroup, profile.Job, profile.PoliceNO, profile.SoldierNO, profile.StudentNo, profile.CreateOn, profile.JoinGroupDate, profile.ApplyDate, profile.JoinPartDate, profile.BeRegularDate, profile.Address, profile.Phone, profile.Type).Execute();
+            db.T("insert into UserProfile(UserID, NO, Name, Sex, Nation, BorthDate, Display, Origin, Education, Marry, OwnPart, OwnGroup, Job, PoliceNO, SoldierNO, StudentNo, CreateOn, JoinGroupDate, ApplyDate, JoinPartDate, BeRegularDate, Address, Phone, Type, UserName) values({...})", userId, profile.NO, profile.Name, profile.Sex, profile.Nation, profile.BorthDate, profile.Display, profile.Origin, profile.Education, profile.Marry, profile.OwnPart, profile.OwnGroup, profile.Job, profile.PoliceNO, profile.SoldierNO, profile.StudentNo, profile.CreateOn, profile.JoinGroupDate, profile.ApplyDate, profile.JoinPartDate, profile.BeRegularDate, profile.Address, profile.Phone, profile.Type, profile.UserName).Execute();
 
-            AddAccount(profile.UserName, userId);
+            AddAccount(profile.UserName, userId, "123456", int.Parse(profile.Pemission));
 
             return Json(new { success = true, profile }, JsonRequestBehavior.AllowGet);
         }
@@ -35,23 +44,8 @@ namespace SchoolSystem.Controllers
         [HttpPost]
         public JsonResult Modify(UserProfile profile)
         {
-            profile.UserName = profile.NO;
-
-            var currentProfile = db.T("select * from UserProfile where NO = {0}", profile.NO).ExecuteDynamicObject();
-
-            if (currentProfile == null)
-                return Json(new { success = false, reason = "党员编号不存在!" }, JsonRequestBehavior.AllowGet);
-
-
-            string userId = currentProfile.UserID.ToString();
-
-            profile.CreateOn = currentProfile.CreateOn.ToString();
-
-            db.T("delete from UserProfile where NO = {0}", profile.NO).Execute();
-
-            db.T("insert into UserProfile(UserID, NO, Name, Sex, Nation, BorthDate, Display, Origin, Education, Marry, OwnPart, OwnGroup, Job, PoliceNO, SoldierNO, StudentNo, CreateOn, JoinGroupDate, ApplyDate, JoinPartDate, BeRegularDate, Address, Phone, Type) values({0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}, {15}, {16}, {17}, {18}, {19}, {20}, {21}, {22}, {23})", userId, profile.NO, profile.Name, profile.Sex, profile.Nation, profile.BorthDate, profile.Display, profile.Origin, profile.Education, profile.Marry, profile.OwnPart, profile.OwnGroup, profile.Job, profile.PoliceNO, profile.SoldierNO, profile.StudentNo, profile.CreateOn, profile.JoinGroupDate, profile.ApplyDate, profile.JoinPartDate, profile.BeRegularDate, profile.Address, profile.Phone, profile.Type).Execute();
-
-            AddAccount(profile.UserName, userId);
+            db.T("update UserProfile set Name = {0}, Sex = {1}, Display = {2}, BorthDate = {3}, OwnPart = {4}, Address = {5}, Phone = {6} where UserID = {7}",
+                profile.Name, profile.Sex, profile.Display, profile.BorthDate, profile.OwnPart, profile.Address, profile.Phone, profile.UserID).Execute();
 
             return Json(new { success = true, profile }, JsonRequestBehavior.AllowGet);
         }
@@ -99,9 +93,13 @@ namespace SchoolSystem.Controllers
         }
 
         [HttpGet]
-        public ContentResult List(int startIndex = 0, int count = 999, string keywords = "")
+        public ContentResult List(int startIndex = 0, int count = 999, string keywords = "", int type = 0)
         {
+
             var filter = "and UserName like '%" + keywords + "%'";
+
+            if (type != 0)
+                filter += " and Pemission='" + type + "'";
 
             var data = db.T("select * from Users where Disabled = 0" + filter + " order by CreateOn desc").ExecuteDataTable();
 
@@ -117,7 +115,7 @@ namespace SchoolSystem.Controllers
         [HttpGet]
         public ContentResult InfoList(int? type = null, int startIndex = 0, int count = 999, string keywords = "")
         {
-            var filter = "where Name like '%" + keywords + "%'";
+            var filter = "where (Name like '%" + keywords + "%' or UserName like '%" + keywords + "%')";
 
             var data = new DataTable();
 
@@ -169,7 +167,7 @@ namespace SchoolSystem.Controllers
         }
 
         [HttpPost]
-        public JsonResult ChangePasswordAdmin(string userId, string userName, string newPassword1, string newPassword2)
+        public JsonResult ChangePasswordAdmin(string userName, string newPassword1, string newPassword2)
         {
             if (newPassword1 != newPassword2)
                 return Json(new { success = false, reason = "两次输入的密码不一样!" }, JsonRequestBehavior.AllowGet);
@@ -178,12 +176,12 @@ namespace SchoolSystem.Controllers
                 return Json(new { success = false, reason = "新密码不能为空!" }, JsonRequestBehavior.AllowGet);
 
             if (!IsUserExist(userName))
-                return Json(new { success = false, reason = "党员编号不存在!" }, JsonRequestBehavior.AllowGet);
+                return Json(new { success = false, reason = "用户名不存在!" }, JsonRequestBehavior.AllowGet);
 
-            var userInfo = db.T("select * from Users where UserID = {0}", userId).ExecuteDynamicObject();
+            //var userInfo = db.T("select * from Users where UserID = {0}", userId).ExecuteDynamicObject();
 
-            if ((int)userInfo.Pemission != 3)
-                return Json(new { success = false, reason = "你不是管理员!" }, JsonRequestBehavior.AllowGet);
+            //if ((int)userInfo.Pemission != 3)
+            //    return Json(new { success = false, reason = "你不是管理员!" }, JsonRequestBehavior.AllowGet);
 
             db.T("update Users set Password = {0} where UserName = {1}", newPassword1, userName).Execute();
 
