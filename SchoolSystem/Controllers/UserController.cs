@@ -79,7 +79,7 @@ namespace SchoolSystem.Controllers
             if (!string.IsNullOrEmpty(userName))
             {
                 db.T("delete from Users where UserName = {0}", userName).Execute();
-                db.T("delete from UserProfile where NO = {0}", userName).Execute();
+                db.T("delete from UserProfile where UserName = {0}", userName).Execute();
             }
 
             return Json(new { success = true }, JsonRequestBehavior.AllowGet);
