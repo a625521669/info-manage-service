@@ -10,14 +10,15 @@ namespace SchoolSystem.Controllers
 {
     public class NewsController : ApiController
     {
-        public ContentResult List(string type = null, int startIndex = 0, int count = 999)
+        public ContentResult List(string type = null, int startIndex = 0, int count = 999, string keywords = "")
         {
             var data = new DataTable();
 
-            if (type == null)
-                data = db.T("select * from News order by PubDate desc").ExecuteDataTable();
+
+            if (type == null || type == "所有")
+                data = db.T("select * from News where  Title like '%" + keywords + "%' or Detail like '%" + keywords + "%' order by PubDate desc").ExecuteDataTable();
             else
-                data = db.T("select * from News where Type = {0} order by PubDate desc", type).ExecuteDataTable();
+                data = db.T("select * from News where Type = {0} and (Title like '%" + keywords + "%' or Detail like '%" + keywords + "%') order by PubDate desc", type).ExecuteDataTable();
 
             var model = new JObject(JObject.FromObject(new
             {
@@ -41,7 +42,7 @@ namespace SchoolSystem.Controllers
 
             news.PubDate = DateTime.Now;
 
-            db.T("insert into News(Title, Type, Detail, PubDate, Author) values({0}, {1}, {2}, {3}, {4})", news.Title,  news.Type, news.Detail, news.PubDate, news.Author).Execute();
+            db.T("insert into News(Title, Type, Detail, PubDate, Author) values({0}, {1}, {2}, {3}, {4})", news.Title, news.Type, news.Detail, news.PubDate, news.Author).Execute();
 
             return Json(new
             {
@@ -49,7 +50,7 @@ namespace SchoolSystem.Controllers
             }, JsonRequestBehavior.AllowGet);
         }
 
-        public JsonResult Edit(News news)
+        public JsonResult Modify(News news)
         {
 
             db.T(@"update News set Type = {0}, Detail = {1}, Title = {3} where ID = {2} ", news.Type, news.Detail, news.ID, news.Title).Execute();

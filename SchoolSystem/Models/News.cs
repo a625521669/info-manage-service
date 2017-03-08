@@ -12,6 +12,6 @@ namespace SchoolSystem.Models
         public string Title { set; get; }
         public DateTime PubDate { set; get; }
         public string Detail { set; get; }
-        public bool Author { set; get; }
+        public string Author { set; get; }
     }
 }
