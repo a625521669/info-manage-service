@@ -1,4 +1,5 @@
 /packages
 /SchoolSystem/bin/*
 /SchoolSystem/*.config
-
+/packages/*
+/SchoolSystem.sln
