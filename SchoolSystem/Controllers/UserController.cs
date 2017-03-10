@@ -19,13 +19,23 @@ namespace SchoolSystem.Controllers
             var prefix = "";
 
             if (profile.Pemission == "1")
+            {
                 prefix = "S";
+                profile.Type = "学生";
+            }
 
             if (profile.Pemission == "2")
+            {
                 prefix = "T";
+                profile.Type = "教师";
+            }
+
 
             if (profile.Pemission == "3")
+            {
                 prefix = "A";
+                profile.Type = "管理员";
+            }
 
             profile.UserName = prefix + "2017" + maxID.ToString();
 
@@ -120,7 +130,7 @@ namespace SchoolSystem.Controllers
             var data = new DataTable();
 
             if (type != null)
-                data = db.T("select * from UserProfile " + filter + " and type = {0} order by CreateOn desc", type).ExecuteDataTable();
+                data = db.T("select * from UserProfile " + filter + " and Type = {0} order by CreateOn desc", type).ExecuteDataTable();
             else
                 data = db.T("select * from UserProfile " + filter + " order by CreateOn desc").ExecuteDataTable();
 

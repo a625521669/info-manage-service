@@ -110,17 +110,21 @@
     <Compile Include="Controllers\DepartmentController.cs" />
     <Compile Include="Controllers\DepGroupController.cs" />
     <Compile Include="Controllers\FilesController.cs" />
+    <Compile Include="Controllers\CourseController.cs" />
     <Compile Include="Controllers\NewsController.cs" />
+    <Compile Include="Controllers\ReviewsController.cs" />
     <Compile Include="Controllers\UserController.cs" />
     <Compile Include="Controllers\VotesController.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Models\Awards.cs" />
+    <Compile Include="Models\Course.cs" />
     <Compile Include="Models\Department.cs" />
     <Compile Include="Models\DepGroup.cs" />
     <Compile Include="Models\Files.cs" />
     <Compile Include="Models\News.cs" />
+    <Compile Include="Models\Review.cs" />
     <Compile Include="Models\UserProfile.cs" />
     <Compile Include="Models\Votes.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -142,6 +146,7 @@
     <Folder Include="Views\DepGroup\" />
     <Folder Include="Views\File\" />
     <Folder Include="Views\News\" />
+    <Folder Include="Views\Reviews\" />
     <Folder Include="Views\User\" />
     <Folder Include="Views\Votes\" />
   </ItemGroup>
