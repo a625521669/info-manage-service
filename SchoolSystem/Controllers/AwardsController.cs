@@ -77,5 +77,7 @@ namespace SchoolSystem.Controllers
 
             return Content(JsonConvert.SerializeObject(data), "application/json");
         }
+
+
     }
 }

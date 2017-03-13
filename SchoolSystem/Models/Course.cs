@@ -12,8 +12,10 @@ namespace SchoolSystem.Models
         public string Contents { set; get; }
         public decimal Credit { set; get; }
         public int QuantityLimit { set; get; }
-        public DateTime ExamTime { set; get; }
+        public int ExamTime { set; get; }
+        public DateTime Time { set; get; }
         public string ExamPosition { set; get; }
         public string TeacherUserName { set; get; }
+        public string Subject { set; get; }
     }
 }

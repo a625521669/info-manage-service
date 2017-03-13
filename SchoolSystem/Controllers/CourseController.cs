@@ -15,10 +15,14 @@ namespace SchoolSystem.Controllers
             var data = new DataTable();
 
 
-            if (type == null || type == "所有")
-                data = db.T("select * from Course where  Title like '%" + keywords + "%' or Detail like '%" + keywords + "%' order by PubDate desc").ExecuteDataTable();
+            if (!string.IsNullOrEmpty(keywords))
+                data = db.T("select * from Course where ID={0} and Time > GetDate() order by Time desc", keywords).ExecuteDataTable();
             else
-                data = db.T("select * from Course where Type = {0} and (Title like '%" + keywords + "%' or Detail like '%" + keywords + "%') order by PubDate desc", type).ExecuteDataTable();
+                data = db.T("select * from Course where Time > GetDate() order by Time desc").ExecuteDataTable();
+
+            data.Columns.Add(new DataColumn("SelectedCount"));
+            foreach (DataRow dr in data.Rows)
+                dr["SelectedCount"] = db.T("select count(*) from CourseChoose where CourseID = {0}", dr["ID"].ToString()).ExecuteScalar();
 
             var model = new JObject(JObject.FromObject(new
             {
@@ -40,8 +44,8 @@ namespace SchoolSystem.Controllers
                 }, JsonRequestBehavior.AllowGet);
 
 
-            db.T("insert into Course(CourseName, Contents, Credit, QuantityLimit, ExamTime, ExamPosition, TeacherUserName) values({...})",
-                c.CourseName, c.Contents, c.Credit, c.QuantityLimit, c.ExamTime, c.ExamPosition, c.TeacherUserName).Execute();
+            db.T("insert into Course(CourseName, Contents, Credit, QuantityLimit, ExamTime, ExamPosition, TeacherUserName, Subject, Time) values({...})",
+                c.CourseName, c.Contents, c.Credit, c.QuantityLimit, c.ExamTime, c.ExamPosition, c.TeacherUserName, c.Subject, c.Time).Execute();
 
             return Json(new
             {
@@ -52,8 +56,8 @@ namespace SchoolSystem.Controllers
         public JsonResult Modify(Course c)
         {
 
-            db.T(@"update Course set CourseName = {0}, Contents = {1}, Credit = {4}, QuantityLimit = {5}, ExamTime = {6}, ExamPosition = {7}, TeacherUserName = {8} where ID = {9} ", 
-                c.CourseName, c.Contents, c.Credit, c.QuantityLimit, c.ExamTime, c.ExamPosition, c.TeacherUserName, c.ID).Execute();
+            db.T(@"update Course set CourseName = {0}, Contents = {1}, Credit = {2}, QuantityLimit = {3}, ExamTime = {4}, ExamPosition = {5}, TeacherUserName = {6}, Subject = {7}, Time={8} where ID = {9} ",
+                c.CourseName, c.Contents, c.Credit, c.QuantityLimit, c.ExamTime, c.ExamPosition, c.TeacherUserName, c.Subject, c.Time, c.ID).Execute();
 
             return Json(new
             {
@@ -79,6 +83,34 @@ namespace SchoolSystem.Controllers
             var data = db.T("select * from Course where ID = {0}", id).ExecuteDynamicObject();
 
             return Content(JsonConvert.SerializeObject(data), "application/json");
+        }
+
+        public JsonResult Choose(string courseId, string studentNo)
+        {
+            var selectedCount = db.T("select count(*) from CourseChoose where CourseID={0}", courseId).ExecuteScalar();
+
+            var courseInfo = db.T("select * from Course where ID={0}", courseId).ExecuteDynamicObject();
+
+            if (DateTime.Now > (DateTime)courseInfo.Time)
+                return Json(new
+                {
+                    success = false,
+                    reason = "已经过了选课时间",
+                }, JsonRequestBehavior.AllowGet);
+
+            if (courseInfo.QuantityLimit != null && (int)courseInfo.QuantityLimit >= (int)selectedCount)
+                return Json(new
+                {
+                    success = false,
+                    reason = "选课人数已满",
+                }, JsonRequestBehavior.AllowGet);
+
+            db.T("insert into CourseChoose(CourseID, StudentNO) values({...})", courseId, studentNo).Execute();
+
+            return Json(new
+            {
+                success = true
+            }, JsonRequestBehavior.AllowGet);
         }
     }
 }

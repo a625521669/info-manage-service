@@ -123,13 +123,13 @@ namespace SchoolSystem.Controllers
         }
 
         [HttpGet]
-        public ContentResult InfoList(int? type = null, int startIndex = 0, int count = 999, string keywords = "")
+        public ContentResult InfoList(string type = "", int startIndex = 0, int count = 999, string keywords = "")
         {
             var filter = "where (Name like '%" + keywords + "%' or UserName like '%" + keywords + "%')";
 
             var data = new DataTable();
 
-            if (type != null)
+            if (!string.IsNullOrEmpty(type))
                 data = db.T("select * from UserProfile " + filter + " and Type = {0} order by CreateOn desc", type).ExecuteDataTable();
             else
                 data = db.T("select * from UserProfile " + filter + " order by CreateOn desc").ExecuteDataTable();

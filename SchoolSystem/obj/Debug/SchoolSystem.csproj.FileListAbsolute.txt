@@ -166,4 +166,3 @@ E:\git\info-manage-service\SchoolSystem\bin\zh-Hans\System.Web.Helpers.resources
 E:\git\info-manage-service\SchoolSystem\bin\zh-Hans\System.Web.Mvc.resources.dll
 E:\git\info-manage-service\SchoolSystem\obj\Debug\SchoolSystem.dll
 E:\git\info-manage-service\SchoolSystem\obj\Debug\SchoolSystem.pdb
-E:\git\info-manage-service\SchoolSystem\obj\Debug\SchoolSystem.csprojResolveAssemblyReference.cache
