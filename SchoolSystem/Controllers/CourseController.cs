@@ -5,20 +5,22 @@ using Newtonsoft.Json;
 using SchoolSystem.Models;
 using Newtonsoft.Json.Linq;
 using System.Data;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace SchoolSystem.Controllers
 {
     public class CourseController : ApiController
     {
-        public ContentResult List(string type = null, int startIndex = 0, int count = 999, string keywords = "")
+        public ContentResult List(string type = "", int startIndex = 0, int count = 999, string keywords = "")
         {
             var data = new DataTable();
 
-
+            
             if (!string.IsNullOrEmpty(keywords))
-                data = db.T("select * from Course where ID={0} and Time > GetDate() order by Time desc", keywords).ExecuteDataTable();
+                data = db.T("select * from Course where ID={0} and Time > GetDate() and Subject like '%"+ type + "%' order by Time desc", keywords).ExecuteDataTable();
             else
-                data = db.T("select * from Course where Time > GetDate() order by Time desc").ExecuteDataTable();
+                data = db.T("select * from Course where Time > GetDate() and Subject like '%"+ type +"%' order by Time desc").ExecuteDataTable();
 
             data.Columns.Add(new DataColumn("SelectedCount"));
             foreach (DataRow dr in data.Rows)
@@ -91,6 +93,18 @@ namespace SchoolSystem.Controllers
 
             var courseInfo = db.T("select * from Course where ID={0}", courseId).ExecuteDynamicObject();
 
+            var selectInfo = db.T("select count(*) from CourseChoose where CourseID = {0} and StudentNO = {1}", courseId, studentNo).ExecuteScalar();
+
+            var teacherInfo = db.T("select * from UserProfile where UserName = {0}", (string)courseInfo.TeacherUserName).ExecuteDynamicObject();
+
+            if ((int)selectInfo > 0)
+                return Json(new
+                {
+                    success = false,
+                    reason = "你已经选课",
+                }, JsonRequestBehavior.AllowGet);
+
+
             if (DateTime.Now > (DateTime)courseInfo.Time)
                 return Json(new
                 {
@@ -98,14 +112,75 @@ namespace SchoolSystem.Controllers
                     reason = "已经过了选课时间",
                 }, JsonRequestBehavior.AllowGet);
 
-            if (courseInfo.QuantityLimit != null && (int)courseInfo.QuantityLimit >= (int)selectedCount)
+            if (courseInfo.QuantityLimit != null && (int)courseInfo.QuantityLimit <= (int)selectedCount)
                 return Json(new
                 {
                     success = false,
                     reason = "选课人数已满",
                 }, JsonRequestBehavior.AllowGet);
 
-            db.T("insert into CourseChoose(CourseID, StudentNO) values({...})", courseId, studentNo).Execute();
+            db.T("insert into CourseChoose(CourseID, StudentNO, TeacherUserName, TeacherName) values({...})", courseId, studentNo, (string)teacherInfo.UserName, (string)teacherInfo.Name).Execute();
+
+            return Json(new
+            {
+                success = true
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+        public JsonResult CancelChoose(int id)
+        {
+            db.T("delete from CourseChoose where ID={0}", id).Execute();
+
+            return Json(new
+            {
+                success = true
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+
+        public object ChooseList(int startIndex = 0, int count = 999, string studentNo = "", string teacherName = "")
+        {
+            var filterList = new List<string>();
+
+            if (!string.IsNullOrEmpty(studentNo))
+                filterList.Add("StudentNO='" + studentNo + "'");
+
+            if (!string.IsNullOrEmpty(teacherName))
+                filterList.Add("teacherName like '%" + teacherName + "%'");
+
+            dynamic chooseList;
+
+            if (filterList.Count > 0)
+                chooseList = db.T("select * from CourseChoose where " + string.Join(" and ", filterList)).ExecuteDynamics();
+            else
+                chooseList = db.T("select * from CourseChoose").ExecuteDynamics();
+
+            var data = new JArray();
+
+            foreach (dynamic item in chooseList)
+            {
+                var courseInfo = db.T("select * from Course where ID = {0}", (int)item.CourseID).ExecuteDynamicObject();
+
+                data.Add(JObject.FromObject(new
+                {
+                    CourseInfo = courseInfo,
+                    ChooseInfo = item
+                }));
+            }
+
+            var model = new JObject(JObject.FromObject(new
+            {
+                list = data.Skip(startIndex).Take(count),
+                count = data.Count
+            }));
+
+            return Content(JsonConvert.SerializeObject(model), "application/json");
+        }
+
+        public object ExamModify(string courseId, DateTime examTime, string examPosition)
+        {
+            db.T("update CourseChoose set ExamTime={1}, ExamPosition={2} where CourseID={0}", courseId, examTime, examPosition).Execute();
+            db.T("update Course set ExamTime={1}, ExamPosition={2} where ID={0}", courseId, examTime, examPosition).Execute();
 
             return Json(new
             {
