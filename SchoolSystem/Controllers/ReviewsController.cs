@@ -5,6 +5,7 @@ using Newtonsoft.Json;
 using SchoolSystem.Models;
 using Newtonsoft.Json.Linq;
 using System.Data;
+using System.Collections.Generic;
 
 namespace SchoolSystem.Controllers
 {

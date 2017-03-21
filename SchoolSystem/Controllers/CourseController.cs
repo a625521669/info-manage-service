@@ -16,11 +16,11 @@ namespace SchoolSystem.Controllers
         {
             var data = new DataTable();
 
-            
+
             if (!string.IsNullOrEmpty(keywords))
-                data = db.T("select * from Course where ID={0} and Time > GetDate() and Subject like '%"+ type + "%' order by Time desc", keywords).ExecuteDataTable();
+                data = db.T("select * from Course where ID={0} and Subject like '%" + type + "%' order by Time desc", keywords).ExecuteDataTable();
             else
-                data = db.T("select * from Course where Time > GetDate() and Subject like '%"+ type +"%' order by Time desc").ExecuteDataTable();
+                data = db.T("select * from Course where Subject like '%" + type + "%' order by Time desc").ExecuteDataTable();
 
             data.Columns.Add(new DataColumn("SelectedCount"));
             foreach (DataRow dr in data.Rows)
@@ -45,9 +45,12 @@ namespace SchoolSystem.Controllers
                     reason = "课程名称不能为空！"
                 }, JsonRequestBehavior.AllowGet);
 
+            var teacher = db.T("select * from UserProfile where UserName={0}", c.TeacherUserName).ExecuteDynamicObject();
 
-            db.T("insert into Course(CourseName, Contents, Credit, QuantityLimit, ExamTime, ExamPosition, TeacherUserName, Subject, Time) values({...})",
-                c.CourseName, c.Contents, c.Credit, c.QuantityLimit, c.ExamTime, c.ExamPosition, c.TeacherUserName, c.Subject, c.Time).Execute();
+            c.TeacherName = (string)teacher.Name;
+
+            db.T("insert into Course(CourseName, Contents, Credit, QuantityLimit, ExamTime, ExamPosition, TeacherUserName, Subject, Time, TeacherName) values({...})",
+                c.CourseName, c.Contents, c.Credit, c.QuantityLimit, c.ExamTime, c.ExamPosition, c.TeacherUserName, c.Subject, c.Time, c.TeacherName).Execute();
 
             return Json(new
             {
@@ -58,8 +61,8 @@ namespace SchoolSystem.Controllers
         public JsonResult Modify(Course c)
         {
 
-            db.T(@"update Course set CourseName = {0}, Contents = {1}, Credit = {2}, QuantityLimit = {3}, ExamTime = {4}, ExamPosition = {5}, TeacherUserName = {6}, Subject = {7}, Time={8} where ID = {9} ",
-                c.CourseName, c.Contents, c.Credit, c.QuantityLimit, c.ExamTime, c.ExamPosition, c.TeacherUserName, c.Subject, c.Time, c.ID).Execute();
+            db.T(@"update Course set CourseName = {0}, Contents = {1}, Credit = {2}, QuantityLimit = {3}, ExamTime = {4}, ExamPosition = {5}, TeacherUserName = {6}, Subject = {7}, Time={8}, TeacherName={9} where ID = {10} ",
+                c.CourseName, c.Contents, c.Credit, c.QuantityLimit, c.ExamTime, c.ExamPosition, c.TeacherUserName, c.Subject, c.Time, c.TeacherName, c.ID).Execute();
 
             return Json(new
             {
@@ -138,22 +141,36 @@ namespace SchoolSystem.Controllers
         }
 
 
-        public object ChooseList(int startIndex = 0, int count = 999, string studentNo = "", string teacherName = "")
+        public object ChooseList(int startIndex = 0, int count = 999, string studentNo = "", string teacherName = "", string teacherUserName = "", string courseID = "", int sort = 0)
         {
+            var orderby = "";
+
+            if (sort == 1)
+                orderby = " order by Score asc";
+
+            if (sort == 2)
+                orderby = " order by Score desc";
+
             var filterList = new List<string>();
 
             if (!string.IsNullOrEmpty(studentNo))
                 filterList.Add("StudentNO='" + studentNo + "'");
 
             if (!string.IsNullOrEmpty(teacherName))
-                filterList.Add("teacherName like '%" + teacherName + "%'");
+                filterList.Add("TeacherName like '%" + teacherName + "%'");
+
+            if (!string.IsNullOrEmpty(teacherUserName))
+                filterList.Add("TeacherUserName = '" + teacherUserName + "'");
+
+            if (!string.IsNullOrEmpty(courseID))
+                filterList.Add("CourseID = " + courseID);
 
             dynamic chooseList;
 
             if (filterList.Count > 0)
-                chooseList = db.T("select * from CourseChoose where " + string.Join(" and ", filterList)).ExecuteDynamics();
+                chooseList = db.T("select * from CourseChoose where " + string.Join(" and ", filterList) + orderby).ExecuteDynamics();
             else
-                chooseList = db.T("select * from CourseChoose").ExecuteDynamics();
+                chooseList = db.T("select * from CourseChoose" + orderby).ExecuteDynamics();
 
             var data = new JArray();
 
@@ -177,10 +194,24 @@ namespace SchoolSystem.Controllers
             return Content(JsonConvert.SerializeObject(model), "application/json");
         }
 
-        public object ExamModify(string courseId, DateTime examTime, string examPosition)
+        public object ExamModify(string ID, DateTime ExamTime, string ExamPosition)
         {
-            db.T("update CourseChoose set ExamTime={1}, ExamPosition={2} where CourseID={0}", courseId, examTime, examPosition).Execute();
-            db.T("update Course set ExamTime={1}, ExamPosition={2} where ID={0}", courseId, examTime, examPosition).Execute();
+            db.T("update CourseChoose set ExamTime={1}, ExamPosition={2} where CourseID={0}", ID, ExamTime, ExamPosition).Execute();
+            db.T("update Course set ExamTime={1}, ExamPosition={2} where ID={0}", ID, ExamTime, ExamPosition).Execute();
+
+            return Json(new
+            {
+                success = true
+            }, JsonRequestBehavior.AllowGet);
+        }
+
+        public object ScoreInput(string ids, string scores)
+        {
+            string[] idArray = ids.Split(',');
+            string[] scoreArray = scores.Split(',');
+
+            for (int i = 0; i < idArray.Length; i++)
+                db.T("update CourseChoose set Score = {1} where ID = {0}", int.Parse(idArray[i]), int.Parse(scoreArray[i])).Execute();
 
             return Json(new
             {

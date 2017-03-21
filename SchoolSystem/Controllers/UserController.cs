@@ -123,9 +123,9 @@ namespace SchoolSystem.Controllers
         }
 
         [HttpGet]
-        public ContentResult InfoList(string type = "", int startIndex = 0, int count = 999, string keywords = "")
+        public ContentResult InfoList(string type = "", int startIndex = 0, int count = 999, string keywords = "", string OwnPart = "")
         {
-            var filter = "where (Name like '%" + keywords + "%' or UserName like '%" + keywords + "%')";
+            var filter = "where (Name like '%" + keywords + "%' or UserName like '%" + keywords + "%') and OwnPart like '%" + OwnPart + "%'";
 
             var data = new DataTable();
 
