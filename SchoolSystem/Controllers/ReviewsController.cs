@@ -12,11 +12,14 @@ namespace SchoolSystem.Controllers
     public class ReviewsController : ApiController
     {
         // GET: Reviews
-        public ContentResult List(string type = null, int startIndex = 0, int count = 999, string keywords = "")
+        public ContentResult List(string type = null, int startIndex = 0, int count = 999, string keywords = "", string tUserName = "")
         {
             var data = new DataTable();
 
-            data = db.T("select * from Reviews where  Contents like '%" + keywords + "%' or Reviews like '%" + keywords + "%' order by CreateOn desc").ExecuteDataTable();
+            if (!string.IsNullOrEmpty(tUserName))
+                data = db.T("select * from Reviews where  (Contents like '%" + keywords + "%' or Reviews like '%" + keywords + "%') and TeacherUserName = {0} order by CreateOn desc", tUserName).ExecuteDataTable();
+            else
+                data = db.T("select * from Reviews where  Contents like '%" + keywords + "%' or Reviews like '%" + keywords + "%' order by CreateOn desc").ExecuteDataTable();
 
             var model = new JObject(JObject.FromObject(new
             {
