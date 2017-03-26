@@ -33,7 +33,7 @@ namespace SchoolSystem.Controllers
         [HttpPost]
         public JsonResult Add(Review r)
         {
-            if (r.Contents == null)
+            if (r.Contents == null && r.Reviews == null)
                 return Json(new
                 {
                     success = false,

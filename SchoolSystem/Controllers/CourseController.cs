@@ -36,8 +36,11 @@ namespace SchoolSystem.Controllers
         }
 
         [HttpPost]
-        public JsonResult Add(Course c)
+        public JsonResult Add(Course c, DateTime? LeadTime = null)
         {
+            if (LeadTime != null)
+                c.Time = (DateTime)LeadTime;
+
             if (c.CourseName == null)
                 return Json(new
                 {
